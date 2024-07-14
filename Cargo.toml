@@ -5,9 +5,9 @@ edition = "2021"
 
 [dependencies]
 actix-web = "4.8.0"
-diesel = { version = "2.2.1", features = ["sqlite"] }
+diesel = { version = "2.2.1", features = ["returning_clauses_for_sqlite_3_35", "sqlite"] }
 dotenvy = "0.15.7"
 env_logger = "0.11.3"
 log = "0.4.22"
 serde = { version = "1.0.204", features = ["derive"] }
-uuid = { version = "1.10.0", features = ["fast-rng", "macro-diagnostics", "v4"] }
+uuid = { version = "1.10.0", features = ["fast-rng", "macro-diagnostics", "serde", "v4"] }

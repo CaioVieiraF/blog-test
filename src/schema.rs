@@ -6,5 +6,6 @@ diesel::table! {
         title -> Text,
         body -> Text,
         public -> Bool,
+        draft -> Bool,
     }
 }

@@ -1,4 +1,3 @@
-mod lib;
 mod models;
 mod routes;
 mod schema;

@@ -2,3 +2,4 @@
 .env
 migrations/.keep
 Cargo.lock
+database.db
