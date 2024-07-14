@@ -9,6 +9,7 @@ use routes::routes;
 async fn main() -> std::io::Result<()> {
     env_logger::init();
 
+    // Main router manager
     HttpServer::new(|| App::new().service(routes()))
         .bind(("127.0.0.1", 8080))?
         .run()

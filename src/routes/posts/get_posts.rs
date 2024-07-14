@@ -10,11 +10,26 @@ async fn get_posts() -> HttpResponse {
 
     log::debug!("Getting posts");
 
+    // Open the DB connection
     let connection = &mut DieselDB::database_connection();
-    let results = posts
-        .select(Post::as_select())
-        .load(connection)
-        .expect("Error loading posts");
+    // Get all the posts, even if there
+    // is none.
+    let results = posts.select(Post::as_select()).load(connection);
 
-    HttpResponse::Ok().json(results)
+    match results {
+        // Return all the posts
+        Ok(result) => {
+            log::info!("Getting all posts");
+
+            HttpResponse::Ok().json(result)
+        }
+        // If there was an error accessing
+        // the posts from the db, log the
+        // error and return an internal error
+        Err(e) => {
+            log::error!("Error getting posts: {e}");
+
+            HttpResponse::InternalServerError().finish()
+        }
+    }
 }

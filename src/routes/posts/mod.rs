@@ -6,6 +6,8 @@ mod get_post_by_id;
 mod get_posts;
 mod publish_post;
 
+// This function returns all the routes
+// related to the posts
 pub fn posts_routes() -> Scope {
     web::scope("posts")
         .service(get_posts::get_posts)

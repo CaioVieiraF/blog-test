@@ -3,6 +3,7 @@ use std::env;
 use diesel::{Connection, SqliteConnection};
 use dotenvy::dotenv;
 
+// Helper struct to connect to the database
 pub struct DieselDB;
 
 impl DieselDB {
