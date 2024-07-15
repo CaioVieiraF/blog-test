@@ -2,7 +2,7 @@ use actix_tests::DieselDB;
 use actix_web::{get, HttpResponse};
 use diesel::{prelude::*, SelectableHelper};
 
-use crate::models::Post;
+use crate::models::post::Post;
 
 #[get("")]
 async fn get_posts() -> HttpResponse {
@@ -12,6 +12,7 @@ async fn get_posts() -> HttpResponse {
 
     // Open the DB connection
     let connection = &mut DieselDB::database_connection();
+
     // Get all the posts, even if there
     // is none.
     let results = posts.select(Post::as_select()).load(connection);
@@ -23,6 +24,7 @@ async fn get_posts() -> HttpResponse {
 
             HttpResponse::Ok().json(result)
         }
+
         // If there was an error accessing
         // the posts from the db, log the
         // error and return an internal error

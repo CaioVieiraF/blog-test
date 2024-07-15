@@ -3,36 +3,44 @@ use actix_web::{get, web, HttpResponse};
 use diesel::{prelude::*, SelectableHelper};
 use uuid::Uuid;
 
-use crate::models::post::{NewPost, Post};
+use crate::models::{
+    post::Post,
+    user::{UniqueUserInfo, User},
+};
 
 #[get("/{id}")]
-async fn get_post_by_id(path: web::Path<Uuid>) -> HttpResponse {
-    use crate::schema::posts::dsl::posts;
+async fn get_user_by_id(path: web::Path<Uuid>) -> HttpResponse {
+    use crate::schema::users::dsl::users;
 
-    log::debug!("Querying post");
+    log::debug!("Querying user");
 
     // Open the DB connection
     let connection = &mut DieselDB::database_connection();
 
     // Get the post id from URL
-    let post_id = path.into_inner();
+    let user_id = path.into_inner();
 
     // Query the post
-    let results = posts
-        .find(String::from(post_id))
-        .select(Post::as_select())
+    let results = users
+        .find(String::from(user_id))
+        .select(User::as_select())
         .first(connection)
         .optional();
 
     match results {
         // If the post is found, then return
         // its id, title and body
-        Ok(Some(result)) => HttpResponse::Ok().json(NewPost {
-            id: result.id,
-            title: result.title,
-            body: result.body,
-            user_id: result.user_id,
-        }),
+        Ok(Some(result)) => {
+            let user_posts = Post::belonging_to(&result)
+                .select(Post::as_select())
+                .load(connection)
+                .unwrap();
+            HttpResponse::Ok().json(UniqueUserInfo {
+                name: result.name,
+                email: result.email,
+                posts: user_posts,
+            })
+        }
 
         // If it was not found, return 404 Not Found
         Ok(None) => HttpResponse::NotFound().finish(),

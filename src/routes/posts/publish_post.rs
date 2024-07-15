@@ -12,6 +12,7 @@ async fn publish_post(path: web::Path<Uuid>) -> HttpResponse {
 
     // Get the id from the URL
     let id = path.into_inner();
+
     // Open the DB connection
     let connection = &mut DieselDB::database_connection();
 
@@ -23,6 +24,7 @@ async fn publish_post(path: web::Path<Uuid>) -> HttpResponse {
     match update_operation {
         // If there was no error, just return ok
         Ok(_) => HttpResponse::NoContent().finish(),
+
         // If there was an error, log it
         // and return an internal error
         Err(e) => {
