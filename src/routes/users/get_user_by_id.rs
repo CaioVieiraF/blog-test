@@ -3,29 +3,22 @@ use actix_web::{get, web, HttpResponse};
 use diesel::{prelude::*, SelectableHelper};
 use uuid::Uuid;
 
-use crate::models::{
-    post::Post,
-    user::{UniqueUserInfo, User},
+use crate::{
+    models::{
+        post::Post,
+        user::{UniqueUserInfo, User},
+    },
+    prelude::*,
 };
 
 #[get("/{id}")]
 async fn get_user_by_id(path: web::Path<Uuid>) -> HttpResponse {
-    use crate::schema::users::dsl::users;
-
     log::debug!("Querying user");
 
     // Open the DB connection
     let connection = &mut DieselDB::database_connection();
-
-    // Get the post id from URL
-    let user_id = path.into_inner();
-
     // Query the post
-    let results = users
-        .find(String::from(user_id))
-        .select(User::as_select())
-        .first(connection)
-        .optional();
+    let results = get_user_from_db(path.into_inner(), connection);
 
     match results {
         // If the post is found, then return
@@ -52,4 +45,15 @@ async fn get_user_by_id(path: web::Path<Uuid>) -> HttpResponse {
             HttpResponse::InternalServerError().finish()
         }
     }
+}
+
+fn get_user_from_db(user_id: Uuid, connection: &mut SqliteConnection) -> Result<Option<User>> {
+    use crate::schema::users::dsl::users;
+
+    users
+        .find(String::from(user_id))
+        .select(User::as_select())
+        .first(connection)
+        .optional()
+        .map_err(Error::DatabaseError)
 }

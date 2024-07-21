@@ -4,22 +4,14 @@ use uuid::Uuid;
 
 use actix_tests::DieselDB;
 
+use crate::prelude::*;
+
 #[put("{id}")]
 async fn publish_post(path: web::Path<Uuid>) -> HttpResponse {
-    use crate::schema::posts::dsl::{draft, posts};
-
     log::info!("Publishing post");
 
-    // Get the id from the URL
-    let id = path.into_inner();
-
-    // Open the DB connection
-    let connection = &mut DieselDB::database_connection();
-
     // Publish the post if it was not already
-    let update_operation = diesel::update(posts.find(String::from(id)))
-        .set(draft.eq(false))
-        .execute(connection);
+    let update_operation = change_post_draft_status(path.into_inner());
 
     match update_operation {
         // If there was no error, just return ok
@@ -32,4 +24,17 @@ async fn publish_post(path: web::Path<Uuid>) -> HttpResponse {
             HttpResponse::BadRequest().finish()
         }
     }
+}
+
+fn change_post_draft_status(id: Uuid) -> Result<usize> {
+    use crate::schema::posts::dsl::{draft, posts};
+
+    // Open the DB connection
+    let connection = &mut DieselDB::database_connection();
+
+    // Change the post 'draft' field to false
+    diesel::update(posts.find(String::from(id)))
+        .set(draft.eq(false))
+        .execute(connection)
+        .map_err(Error::DatabaseError)
 }

@@ -3,3 +3,5 @@
 migrations/.keep
 Cargo.lock
 database.db
+key.pem
+cert.pem

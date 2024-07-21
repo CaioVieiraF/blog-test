@@ -3,26 +3,17 @@ use actix_web::{get, web, HttpResponse};
 use diesel::{prelude::*, SelectableHelper};
 use uuid::Uuid;
 
-use crate::models::post::{NewPost, Post};
+use crate::{
+    models::post::{NewPost, Post},
+    prelude::*,
+};
 
-#[get("/{id}")]
+#[get("{id}")]
 async fn get_post_by_id(path: web::Path<Uuid>) -> HttpResponse {
-    use crate::schema::posts::dsl::posts;
-
     log::debug!("Querying post");
 
-    // Open the DB connection
-    let connection = &mut DieselDB::database_connection();
-
-    // Get the post id from URL
-    let post_id = path.into_inner();
-
     // Query the post
-    let results = posts
-        .find(String::from(post_id))
-        .select(Post::as_select())
-        .first(connection)
-        .optional();
+    let results = get_post_from_db(path.into_inner());
 
     match results {
         // If the post is found, then return
@@ -44,4 +35,18 @@ async fn get_post_by_id(path: web::Path<Uuid>) -> HttpResponse {
             HttpResponse::InternalServerError().finish()
         }
     }
+}
+
+fn get_post_from_db(id: Uuid) -> Result<Option<Post>> {
+    use crate::schema::posts::dsl::posts;
+
+    // Open the DB connection
+    let connection = &mut DieselDB::database_connection();
+
+    posts
+        .find(String::from(id))
+        .select(Post::as_select())
+        .first(connection)
+        .optional()
+        .map_err(Error::DatabaseError)
 }

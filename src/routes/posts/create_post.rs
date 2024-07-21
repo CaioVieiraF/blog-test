@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use actix_tests::DieselDB;
 use actix_web::{post, web::Json, HttpResponse};
 use diesel::prelude::*;
@@ -9,34 +10,21 @@ use crate::models::{
 };
 
 #[post("")]
-async fn create_post<'a>(new_post: Json<NewPostRequest>) -> HttpResponse {
-    use crate::schema::posts;
+async fn create_post(new_post_request: Json<NewPostRequest>) -> HttpResponse {
+    log::info!("Creating post");
 
-    log::debug!("Creating post");
+    // Create the post object
+    let new_post = new_post(new_post_request.into_inner());
 
-    // Generate UUID to use as id for the post
-    let post_id = Uuid::new_v4();
-
-    // Opens the db connection
-    let db_connection = &mut DieselDB::database_connection();
-    let new_post = NewPost {
-        id: post_id.into(),
-        title: new_post.title.clone(),
-        body: new_post.body.clone(),
-        user_id: new_post.user_id.to_owned(),
-    };
-
-    // Create the post on DB
-    let result = diesel::insert_into(posts::table)
-        .values(new_post)
-        .execute(db_connection);
+    // register the post on the DB
+    let result = register_post_on_db(new_post);
 
     // If the creation fails, then log the error
     // and return an error. Otherwise return the
     // post id
     match result {
-        Ok(_) => {
-            log::info!("Post with id {post_id} created.");
+        Ok(post_id) => {
+            log::info!("Post with id {} created.", post_id);
             HttpResponse::Created().json(CreationResponse { uuid: post_id })
         }
 
@@ -47,4 +35,39 @@ async fn create_post<'a>(new_post: Json<NewPostRequest>) -> HttpResponse {
             HttpResponse::InternalServerError().finish()
         }
     }
+}
+
+fn new_post(post_data: NewPostRequest) -> NewPost {
+    log::debug!("Creating post object");
+
+    // Generate UUID to use as id for the post
+    let post_id = Uuid::new_v4();
+
+    // Returns the post object
+    NewPost {
+        id: post_id.into(),
+        title: post_data.title.clone(),
+        body: post_data.body.clone(),
+        user_id: post_data.user_id.to_owned(),
+    }
+}
+
+fn register_post_on_db(post: NewPost) -> Result<String> {
+    log::debug!("Register new post on DB");
+    use crate::schema::posts;
+
+    // Opens the db connection
+    let db_connection = &mut DieselDB::database_connection();
+
+    // The post ID to return as confirmation
+    let post_id = post.id.clone();
+
+    // Create the post on DB
+    let result = diesel::insert_into(posts::table)
+        .values(post)
+        .execute(db_connection)
+        .map(|_| post_id)
+        .map_err(Error::DatabaseError);
+
+    result
 }

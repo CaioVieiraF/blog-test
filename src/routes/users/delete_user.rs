@@ -4,25 +4,16 @@ use uuid::Uuid;
 
 use actix_tests::DieselDB;
 
+use crate::prelude::*;
+
 #[delete("{id}")]
 async fn delete_user(path: web::Path<Uuid>) -> HttpResponse {
-    use crate::schema::users::dsl::users;
-
-    // Get the post id from the URL
-    let user_id = path.into_inner();
-
-    // Open the DB connection
-    let connection = &mut DieselDB::database_connection();
-
-    // Delete the post
-    let results = diesel::delete(users.find(String::from(user_id)))
-        .execute(connection)
-        .optional();
+    let results = remove_user_from_db(path.into_inner());
 
     match results {
         // Return Ok if it was deleted successfully
         Ok(Some(result)) => {
-            log::info!("User with id {user_id} deleted successfully.");
+            log::info!("User deleted successfully.");
             log::debug!("User {result}.");
 
             HttpResponse::Ok().finish()
@@ -30,7 +21,7 @@ async fn delete_user(path: web::Path<Uuid>) -> HttpResponse {
 
         // Return 404 Not Found if the post was not found
         Ok(None) => {
-            log::info!("User with id {user_id} not found.");
+            log::info!("User not found.");
 
             HttpResponse::NotFound().finish()
         }
@@ -42,4 +33,17 @@ async fn delete_user(path: web::Path<Uuid>) -> HttpResponse {
             HttpResponse::InternalServerError().finish()
         }
     }
+}
+
+fn remove_user_from_db(user_id: Uuid) -> Result<Option<usize>> {
+    use crate::schema::users::dsl::users;
+
+    // Open the DB connection
+    let connection = &mut DieselDB::database_connection();
+
+    // Delete the user
+    diesel::delete(users.find(String::from(user_id)))
+        .execute(connection)
+        .optional()
+        .map_err(Error::DatabaseError)
 }
